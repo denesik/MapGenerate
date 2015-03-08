@@ -64,10 +64,10 @@ glm::vec3 Barycentric(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c
 
 
 
-void MapGenerate::Triangle(std::vector<unsigned char> &surface, const glm::uvec2 &size,
-                           const glm::vec2 &a, unsigned char c1,
-                           const glm::vec2 &b, unsigned char c2,
-                           const glm::vec2 &c, unsigned char c3)
+void MapGenerate::DrawTriangle(std::vector<unsigned char> &surface, const glm::uvec2 &size,
+                              const glm::vec2 &a, unsigned char c1,
+                              const glm::vec2 &b, unsigned char c2,
+                              const glm::vec2 &c, unsigned char c3)
 {
   assert(surface.size() == size.x * size.y);
   // Ищем ограничивающий прямоугольник для треугольника.
