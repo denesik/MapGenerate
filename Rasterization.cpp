@@ -58,6 +58,7 @@ void SortPointCcw(const std::vector<glm::vec2> &vertex, std::vector<unsigned int
 void MapGenerate::Rasterization(std::vector<unsigned char> &surface, const glm::uvec2 &size,
                                 const Voronoi &diagram, const std::vector<unsigned char> &vertexHeight)
 {
+  const glm::uvec2 surfaceSize(size.x + 1, size.y + 1);
   auto const &sites = diagram.GetSites();
   auto const &vertex = diagram.GetVertex();
   auto const &edges = diagram.GetEdges();
@@ -114,17 +115,24 @@ void MapGenerate::Rasterization(std::vector<unsigned char> &surface, const glm::
     {
       continue;
     }
+    unsigned int ccolor = 0;
+    for(unsigned int j = 0; j < vertexIndex.size(); ++j)
+    {
+      ccolor += vertexHeight[j];
+    }
+    ccolor /= vertexIndex.size();
+
     for(unsigned int j = 1; j < vertexIndex.size(); ++j)
     {
-      MapGenerate::DrawTriangle(surface, size,
-                                sites[i],                   vertexHeight[i],
-                                vertex[vertexIndex[j]],     vertexHeight[i],
-                                vertex[vertexIndex[j - 1]], vertexHeight[i]);
+      MapGenerate::DrawTriangle(surface, surfaceSize,
+                                sites[i],                   static_cast<unsigned char>(ccolor),
+                                vertex[vertexIndex[j]],     vertexHeight[vertexIndex[j]],
+                                vertex[vertexIndex[j - 1]], vertexHeight[vertexIndex[j - 1]]);
     }
-    MapGenerate::DrawTriangle(surface, size,
-                              sites[i],                                    vertexHeight[i],
-                              vertex[vertexIndex[vertexIndex.size() - 1]], vertexHeight[i],
-                              vertex[vertexIndex[0]],                      vertexHeight[i]);
+    MapGenerate::DrawTriangle(surface, surfaceSize,
+                              sites[i],                                    static_cast<unsigned char>(ccolor),
+                              vertex[vertexIndex[vertexIndex.size() - 1]], vertexHeight[vertexIndex[vertexIndex.size() - 1]],
+                              vertex[vertexIndex[0]],                      vertexHeight[vertexIndex[0]]);
   }
 
 }

@@ -10,7 +10,8 @@ SOURCES += main.cpp \
     voronoi/Voronoi.cpp \
     lodepng/lodepng.cpp \
     Triangle.cpp \
-    Rasterization.cpp
+    Rasterization.cpp \
+    image.cpp
 
 HEADERS += \
     voronoi/geometry.h \
@@ -18,5 +19,6 @@ HEADERS += \
     voronoi/Voronoi.h \
     lodepng/lodepng.h \
     Triangle.h \
-    Rasterization.h
+    Rasterization.h \
+    image.h
 

@@ -2,6 +2,7 @@
 #include "lodepng/lodepng.h"
 #include "Triangle.h"
 #include "Rasterization.h"
+#include "image.h"
 
 #include <stdlib.h>
 #include <ctime>
@@ -54,7 +55,7 @@ int main()
   glm::uvec2 size(500, 500);
 
   std::vector<unsigned char> mData;
-  mData.resize(size.x * size.y, 0xFF);
+  mData.resize((size.x + 1) * (size.y + 1), 0xFF);
 
   std::vector<glm::vec2> points;
   points = Generate(20, size);
@@ -71,7 +72,31 @@ int main()
 
   MapGenerate::Rasterization(mData, size, diagram, vertexHeight);
 
-  lodepng::encode("img1.png", mData, size.x, size.y, LCT_GREY);
+  Image image;
+  image.Resize(size.x + 1, size.y + 1);
+  image.FillGray(mData);
+
+  const std::vector<Voronoi::Edge> &edge = diagram.GetEdges();
+  for(auto it = edge.begin(); it != edge.end(); ++it)
+  {
+    const glm::vec2 &p1 = vertex[(*it).vertex1];
+    const glm::vec2 &p2 = vertex[(*it).vertex2];
+    image.DrawLine(p1, p2, 0x00FF00FF);
+  }
+
+  for(auto it = edge.begin(); it != edge.end(); ++it)
+  {
+    const glm::vec2 &p1 = points[(*it).site1];
+    const glm::vec2 &p2 = points[(*it).site2];
+    image.DrawPoint(p1, 0xFF0000FF);
+    image.DrawPoint(p2, 0xFF0000FF);
+    //image.DrawLine(p1, p2, 0xFF0000FF);
+  }
+
+  image.Save("img.png");
+
+
+//  lodepng::encode("img1.png", mData, size.x, size.y, LCT_GREY);
 
   return 0;
 }
