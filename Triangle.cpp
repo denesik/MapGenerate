@@ -1,5 +1,55 @@
 #include "Triangle.h"
 
+
+// Описание уравнения прямой.
+struct Line
+{
+  float a;
+  float b;
+  float c;
+  Line()
+    : a(0.0f), b(0.0f), c(0.0f)
+  {}
+  Line(float _a,float _b,float _c)
+    : a(_a), b(_b), c(_c)
+  {}
+  // Построить прямую по двум точкам.
+  Line(const glm::vec2 &_a, const glm::vec2 &_b)
+    : a(_a.y - _b.y), b(_b.x - _a.x), c(_a.x * _b.y - _b.x * _a.y)
+  {}
+};
+
+// Построить перпендикуляр к заданной прямой.
+Line Perpendicular(const Line &line, const glm::vec2 &point)
+{
+  return Line(-line.b, line.a, line.b * point.x - line.a * point.y);
+}
+
+// Найти точку пересечения двух прямых.
+glm::vec2 IntersectLines(const Line &a, const Line &b)
+{
+  glm::vec2 p;
+  double k = a.a * b.b - b.a * a.b;
+  p.x = (b.c * a.b - a.c * b.b) / k;
+  p.y = (a.c * b.a - b.c * a.a) / k;
+  return p;
+}
+
+float ColorFraction(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c, const glm::vec2 &o)
+{
+  Line bc(b, c);
+  Line abc(Perpendicular(bc, a));
+  Line oa(Perpendicular(abc, o));
+
+  glm::vec2 pabc = IntersectLines(bc, abc);
+  glm::vec2 poa = IntersectLines(oa, abc);
+
+  return 1 - glm::length(a - poa) / glm::length(a - pabc);
+}
+
+
+
+
 // Ищем барицентрические координаты.
 glm::vec3 Barycentric(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c, const glm::vec2 &p)
 {
@@ -46,7 +96,10 @@ void MapGenerate::Triangle(std::vector<unsigned char> &surface, const glm::uvec2
           {
             continue;
           }
-          surface[p.y * size.x + p.x] = (c1 + c2 + c3) / 3;
+          surface[p.y * size.x + p.x] =
+              c1 * ColorFraction(a, b, c, p) +
+              c2 * ColorFraction(b, c, a, p) +
+              c3 * ColorFraction(c, a, b, p);
       }
   }
 }
