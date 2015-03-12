@@ -3,6 +3,7 @@
 #include "Triangle.h"
 #include "Rasterization.h"
 #include "image.h"
+#include "HeightMap.h"
 
 #include <stdlib.h>
 #include <ctime>
@@ -51,7 +52,32 @@ std::vector<glm::vec2> Generate(const unsigned int count, const glm::uvec2 &size
 
 int main()
 {
+  glm::uvec2 size(201, 201);
+  std::vector<float> mData;
+  mData.resize((size.x) * (size.y), 0.0f);
+  HeightMap::DiamondSquare(mData, size, 0.0f, 0.0f, 0.0f, 0.0f);
 
+  Image image;
+  image.Resize(size.x, size.y);
+  image.Fill(0xFFFFFFFF);
+
+  for(unsigned int y = 0; y < size.y; ++y)
+  {
+    for(unsigned int x = 0; x < size.x; ++x)
+    {
+      //unsigned int color = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 128.0f);
+      unsigned int color = static_cast<unsigned char>(mData[y * size.x + x] + 128.0f);
+      color |= color << 8;
+      color |= color << 8;
+      color |= color << 8;
+      color |= 0x000000FF;
+      image.DrawPoint(glm::uvec2(x, y), color);
+    }
+  }
+
+  image.Save("img.png");
+
+  /*
   glm::uvec2 size(500, 500);
 
   std::vector<unsigned char> mData;
@@ -97,7 +123,7 @@ int main()
 
 
 //  lodepng::encode("img1.png", mData, size.x, size.y, LCT_GREY);
-
+*/
   return 0;
 }
 
