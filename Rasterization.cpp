@@ -2,6 +2,7 @@
 
 #include <set>
 #include <algorithm>
+#include <functional>
 #include "Triangle.h"
 
 float RotationPoint(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c)

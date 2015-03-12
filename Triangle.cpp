@@ -28,7 +28,7 @@ Line Perpendicular(const Line &line, const glm::vec2 &point)
 // Найти точку пересечения двух прямых.
 glm::vec2 IntersectLines(const Line &a, const Line &b)
 {
-  glm::vec2 p;
+  glm::dvec2 p;
   double k = a.a * b.b - b.a * a.b;
   p.x = (b.c * a.b - a.c * b.b) / k;
   p.y = (a.c * b.a - b.c * a.a) / k;
@@ -96,10 +96,10 @@ void MapGenerate::DrawTriangle(std::vector<unsigned char> &surface, const glm::u
           {
             continue;
           }
-          surface[p.y * size.x + p.x] =
+          surface[p.y * size.x + p.x] = static_cast<unsigned char>(
               c1 * ColorFraction(a, b, c, p) +
               c2 * ColorFraction(b, c, a, p) +
-              c3 * ColorFraction(c, a, b, p);
+              c3 * ColorFraction(c, a, b, p));
       }
   }
 }
