@@ -8,14 +8,41 @@
 
 namespace HeightMap
 {
-  /// √енератор случайных чисел дл€ DiamondSquare по умолчанию.
-  struct DiamondSquareRandomDefault
+  struct PointGenerator
   {
-    float operator()(const glm::uvec2 &)
+    PointGenerator(std::vector<float> &data, const glm::uvec2 &size, float roughness)
+      : mData(data), mSize(size), mRoughness(roughness)
+    {
+    }
+    float operator()(const glm::uvec2 &mid, float k, 
+                     const glm::uvec2 &l, const glm::uvec2 &t, const glm::uvec2 &r, const glm::uvec2 &b)
+    {
+      float pl = ContainsPoint(l) ? mData[l.y * mSize.x + l.x] : 0.0f;
+      float pt = ContainsPoint(t) ? mData[t.y * mSize.x + t.x] : 0.0f;
+      float pr = ContainsPoint(r) ? mData[r.y * mSize.x + r.x] : 0.0f;
+      float pb = ContainsPoint(b) ? mData[b.y * mSize.x + b.x] : 0.0f;
+
+      float pm = (pl + pt + pr + pb) / 4.0f;
+      pm += mRoughness * k * Rand();
+
+      return pm;
+    }
+
+    // Ќаходитс€ ли точка в рабочей области.
+    bool ContainsPoint(const glm::uvec2 &point)
+    {
+      return point.x >= 0 && point.x < mSize.x && point.y >= 0 && point.y < mSize.y;
+    }
+
+    float Rand()
     {
       return static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 0.5f;
     }
-  };
+
+    const std::vector<float> &mData;
+    const glm::uvec2 &mSize;
+    const float mRoughness;
+  }; 
 
   namespace DiamondSquareImpl
   {
@@ -23,9 +50,8 @@ namespace HeightMap
     class DiamondSquareWorker
     {
     public:
-      DiamondSquareWorker(std::vector<float> &data, const glm::uvec2 &size, float roughness,
-        RandGenerator randGen = RandGenerator())
-        : mData(data), mSize(size.x, size.y), mRoughness(roughness), mRandGenerator(randGen),
+      DiamondSquareWorker(std::vector<float> &data, const glm::uvec2 &size, PointGenerator generator = PointGenerator())
+        : mData(data), mSize(size.x, size.y), mPointGenerator(generator),
           mSizeP2(size.x > size.y ? Pow2(size.x - 1) + 1 : Pow2(size.y - 1) + 1)
       {
       }
@@ -43,6 +69,8 @@ namespace HeightMap
         unsigned int stride = mSizeP2 / 2;
         while(stride >= 1)
         {
+          float k = static_cast<float>(stride) / static_cast<float>(mSizeP2 - 1);
+
           for(unsigned int y = stride; y < mSizeP2; y += stride * 2)
           {
             for(unsigned int x = stride; x < mSizeP2; x += stride * 2)
@@ -61,7 +89,7 @@ namespace HeightMap
               const glm::uvec2 prb(x + stride, y - stride);
               
               // ¬ычисл€ем высоту центровой точки.
-              CreatePoint(mid, stride, plb, plt, prt, prb);
+              mData[mid.y * mSize.x + mid.x] = glm::clamp(mPointGenerator(mid, k, plb, plt, prt, prb), -1.0f, 1.0f);
             }
           }
 
@@ -84,7 +112,7 @@ namespace HeightMap
               const glm::uvec2 pb(x, y - stride);
 
               // ¬ычисл€ем высоты точек на сторонах.
-              CreatePoint(mid, stride, pl, pt, pr, pb);
+              mData[mid.y * mSize.x + mid.x] = glm::clamp(mPointGenerator(mid, k, pl, pt, pr, pb), -1.0f, 1.0f);
             }
             column = column ? 0 : 1;
           }
@@ -94,32 +122,14 @@ namespace HeightMap
       }
 
     private:
-      RandGenerator mRandGenerator; // √енератор случайных чисел.
+      PointGenerator mPointGenerator; // √енератор высот дл€ точек.
       std::vector<float> &mData;    //  арта высот.
       const glm::uvec2 mSize;       // –азмер карты высот.
       const unsigned int mSizeP2;   // –азмер области работы алгоритма.
-      const float mRoughness;
 
     private:
 
-      /// —генерировать высоту дл€ заданной точки.
-      void CreatePoint(const glm::uvec2 &mid, unsigned int size, const glm::uvec2 &l, const glm::uvec2 &t, const glm::uvec2 &r, const glm::uvec2 &b)
-      {
-        assert(ContainsPoint(mid));
-        float pl = ContainsPoint(l) ? mData[l.y * mSize.x + l.x] : 0.0f;
-        float pt = ContainsPoint(t) ? mData[t.y * mSize.x + t.x] : 0.0f;
-        float pr = ContainsPoint(r) ? mData[r.y * mSize.x + r.x] : 0.0f;
-        float pb = ContainsPoint(b) ? mData[b.y * mSize.x + b.x] : 0.0f;
-
-        float k = static_cast<float>(size) / static_cast<float>(mSizeP2 - 1);
-        float pm = (pl + pt + pr + pb) / 4.0f;
-        pm += mRoughness * k * mRandGenerator(mid);
-        pm = glm::clamp(pm, -1.0f, 1.0f);
-
-        mData[mid.y * mSize.x + mid.x] = pm;
-      }
-
-      // Ќаходитс€ ли точка в рабочей области.
+      /// Ќаходитс€ ли точка в рабочей области.
       bool ContainsPoint(const glm::uvec2 &point)
       {
         return point.x >= 0 && point.x < mSize.x && point.y >= 0 && point.y < mSize.y;
@@ -155,19 +165,19 @@ namespace HeightMap
   }
 
   /// √енератор шума методом Diamond Square с использованием заданного генератора случайных чисел.
-  template<class RandGenerator>
-  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size, float roughness,
+  template<class PointGenerator>
+  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size,
                      float lb, float lt, float rt, float tb,
-                     RandGenerator randGen = RandGenerator())
+                     PointGenerator generator = PointGenerator())
   {
-    DiamondSquareImpl::DiamondSquareWorker<RandGenerator>(data, size, roughness, randGen)(lb, lt, rt, tb);
+    DiamondSquareImpl::DiamondSquareWorker<PointGenerator>(data, size, generator)(lb, lt, rt, tb);
   }
 
-  /// √енератор шума методом Diamond Square с использованием генератора случайных чисел по умолчанию.
+  /// √енератор шума методом Diamond Square с использованием генератора точек по умолчанию.
   void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size, float roughness,
                      float lb, float lt, float rt, float tb)
   {
-    DiamondSquare(data, size, roughness, lb, lt, rt, tb, DiamondSquareRandomDefault());
+    DiamondSquare(data, size, lb, lt, rt, tb, PointGenerator(data, size, roughness));
   }
 
 }

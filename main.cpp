@@ -63,11 +63,11 @@ void Print(const std::vector<float> &data, const glm::uvec2 &size)
 
 int main()
 {
-  glm::uvec2 size(500, 50);
+  glm::uvec2 size(300, 100);
   std::vector<float> mData;
   mData.resize((size.x) * (size.y), 0.0f);
   
-  HeightMap::DiamondSquare(mData, size, 40, 0.0f, 0.0f, 0.0f, 0.0f);
+  HeightMap::DiamondSquare(mData, size, 20, 0.0f, 0.0f, 0.0f, 0.0f);
 
   Image image;
   image.Resize(size.x, size.y);
