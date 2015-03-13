@@ -40,49 +40,45 @@ namespace HeightMap
         mData[static_cast<unsigned int>(glm::round(posrt.y)) * mSize.y + static_cast<unsigned int>(glm::round(posrt.x))] = rt;
         mData[static_cast<unsigned int>(glm::round(poslb.y)) * mSize.y + static_cast<unsigned int>(glm::round(posrt.x))] = rb;
 
-        float strideX = static_cast<float>(mSize.x - 1);
-        float strideY = static_cast<float>(mSize.y - 1);
+        float strideX = static_cast<float>(mSize.x - 1) / 2.0f;
+        float strideY = static_cast<float>(mSize.y - 1) / 2.0f;
         float k = 1.0f;
         while(strideX >= 1.0f || strideY >= 1.0f)
         {
           k /= 2.0f;
 
-          float dstrideX = strideX / 2.0f;
-          float dstrideY = strideY / 2.0f;
-
-          for(float y = dstrideY; y < mSize.y - 1; y += strideY)
+          for(float y = strideX; y <= mSize.y - 1; y += strideY * 2.0f)
           {
-            for(float x = dstrideX; x < mSize.x - 1; x += strideX)
+            for(float x = strideX; x <= mSize.x - 1; x += strideX * 2.0f)
             {
               // центр
               const glm::vec2 mid(x, y);
-              const glm::vec2 plb(x - dstrideX, y - dstrideY);
-              const glm::vec2 plt(x - dstrideX, y + dstrideY);
-              const glm::vec2 prt(x + dstrideX, y + dstrideY);
-              const glm::vec2 prb(x + dstrideX, y - dstrideY);
+              const glm::vec2 plb(x - strideX, y - strideX);
+              const glm::vec2 plt(x - strideX, y + strideX);
+              const glm::vec2 prt(x + strideX, y + strideX);
+              const glm::vec2 prb(x + strideX, y - strideX);
               
               // ¬ычисл€ем высоту центровой точки.
               CreatePoint(mid, k, plb, plt, prt, prb);
             }
           }
 
-          for(float y = dstrideY; y < mSize.y - 1; y += strideY)
+          unsigned int column = 1;
+          for(float y = 0; y <= mSize.y - 1; y += strideY)
           {
-            for(float x = dstrideX; x < mSize.x - 1; x += strideX)
+            for(float x = strideX * column; x <= mSize.x - 1; x += strideX * 2.0f)
             {
               // центр
               const glm::vec2 mid(x, y);
-              const glm::vec2 plb(x - dstrideX, y - dstrideY);
-              const glm::vec2 plt(x - dstrideX, y + dstrideY);
-              const glm::vec2 prt(x + dstrideX, y + dstrideY);
-              const glm::vec2 prb(x + dstrideX, y - dstrideY);
+              const glm::vec2 pl(x - strideX, y);
+              const glm::vec2 pt(x, y + strideX);
+              const glm::vec2 pr(x + strideX, y);
+              const glm::vec2 pb(x, y - strideX);
 
               // ¬ычисл€ем высоты точек на сторонах.
-              CreatePoint(glm::vec2(plb.x, mid.y), k, glm::vec2(plb.x - dstrideX, mid.y), plt, mid, plb);
-              CreatePoint(glm::vec2(mid.x, prt.y), k, plt, glm::vec2(mid.x, prt.y + dstrideY), prt, mid);
-              CreatePoint(glm::vec2(prt.x, mid.y), k, mid, prt, glm::vec2(prt.x + dstrideX, mid.y), prb);
-              CreatePoint(glm::vec2(mid.x, plb.y), k, plb, mid, prb, glm::vec2(mid.x, plb.y - dstrideY));
+              CreatePoint(mid, k, pl, pt, pr, pb);
             }
+            column = column ? 0 : 1;
           }
           strideX /= 2.0f;
           strideY /= 2.0f;
@@ -106,8 +102,11 @@ namespace HeightMap
         float pb = ContainsPoint(b) ? mData[static_cast<unsigned int>(glm::round(b.y)) * mSize.x + static_cast<unsigned int>(glm::round(b.x))] : 0.0f;
 
         float pm = (pb + pt + pr + pb) / 4.0f;
-        pm += 1.0f * k * mRandGenerator(mid);
+        float a = mRandGenerator(mid);
+        pm += 1.0f * k * a;
 
+        printf("x: %i, y: %i = %i\n", static_cast<unsigned int>(glm::round(mid.y)), static_cast<unsigned int>(glm::round(mid.x)), 
+          static_cast<int>(pm));
         mData[static_cast<unsigned int>(glm::round(mid.y)) * mSize.x + static_cast<unsigned int>(glm::round(mid.x))] = pm;
       }
 

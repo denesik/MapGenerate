@@ -52,7 +52,7 @@ std::vector<glm::vec2> Generate(const unsigned int count, const glm::uvec2 &size
 
 int main()
 {
-  glm::uvec2 size(201, 201);
+  glm::uvec2 size(200, 200);
   std::vector<float> mData;
   mData.resize((size.x) * (size.y), 0.0f);
   HeightMap::DiamondSquare(mData, size, 0.0f, 0.0f, 0.0f, 0.0f);
