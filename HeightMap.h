@@ -40,14 +40,16 @@ namespace HeightMap
         mData[static_cast<unsigned int>(glm::round(posrt.y)) * mSize.y + static_cast<unsigned int>(glm::round(posrt.x))] = rt;
         mData[static_cast<unsigned int>(glm::round(poslb.y)) * mSize.y + static_cast<unsigned int>(glm::round(posrt.x))] = rb;
 
+        unsigned int mPointCreated = 4;
+
         float strideX = static_cast<float>(mSize.x - 1) / 2.0f;
         float strideY = static_cast<float>(mSize.y - 1) / 2.0f;
         float k = 1.0f;
-        while(strideX >= 1.0f || strideY >= 1.0f)
+        while(strideX > 0.5f || strideY > 0.5f)
         {
           k /= 2.0f;
 
-          for(float y = strideX; y <= mSize.y - 1; y += strideY * 2.0f)
+          for(float y = strideY; y <= mSize.y - 1; y += strideY * 2.0f)
           {
             for(float x = strideX; x <= mSize.x - 1; x += strideX * 2.0f)
             {
@@ -60,6 +62,7 @@ namespace HeightMap
               
               // Вычисляем высоту центровой точки.
               CreatePoint(mid, k, plb, plt, prt, prb);
+              ++mPointCreated;
             }
           }
 
@@ -77,6 +80,7 @@ namespace HeightMap
 
               // Вычисляем высоты точек на сторонах.
               CreatePoint(mid, k, pl, pt, pr, pb);
+              ++mPointCreated;
             }
             column = column ? 0 : 1;
           }
@@ -84,13 +88,14 @@ namespace HeightMap
           strideY /= 2.0f;
         }
 
+        printf("Points. All: %i, Created: %i\n", mSize.x * mSize.y, mPointCreated);
       }
 
     private:
       RandGenerator mRandGenerator;
       std::vector<float> &mData;
       const glm::uvec2 mSize;
-    
+
     private:
 
       void CreatePoint(const glm::vec2 &mid, float k, const glm::vec2 &l, const glm::vec2 &t, const glm::vec2 &r, const glm::vec2 &b)
@@ -101,12 +106,11 @@ namespace HeightMap
         float pr = ContainsPoint(r) ? mData[static_cast<unsigned int>(glm::round(r.y)) * mSize.x + static_cast<unsigned int>(glm::round(r.x))] : 0.0f;
         float pb = ContainsPoint(b) ? mData[static_cast<unsigned int>(glm::round(b.y)) * mSize.x + static_cast<unsigned int>(glm::round(b.x))] : 0.0f;
 
-        float pm = (pb + pt + pr + pb) / 4.0f;
-        float a = mRandGenerator(mid);
-        pm += 1.0f * k * a;
+        float pm = (pl + pt + pr + pb) / 4.0f;
+        pm += 1.0f * k * mRandGenerator(mid);
 
-        printf("x: %i, y: %i = %i\n", static_cast<unsigned int>(glm::round(mid.y)), static_cast<unsigned int>(glm::round(mid.x)), 
-          static_cast<int>(pm));
+        //printf("x: %i, y: %i = %i\n", static_cast<unsigned int>(glm::round(mid.y)), static_cast<unsigned int>(glm::round(mid.x)), 
+        //  static_cast<int>(pm));
         mData[static_cast<unsigned int>(glm::round(mid.y)) * mSize.x + static_cast<unsigned int>(glm::round(mid.x))] = pm;
       }
 
