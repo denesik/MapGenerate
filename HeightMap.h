@@ -11,7 +11,7 @@ namespace HeightMap
   /// √енератор случайных чисел дл€ DiamondSquare по умолчанию.
   struct DiamondSquareRandomDefault
   {
-    float operator()(const glm::vec2 &)
+    float operator()(const glm::uvec2 &)
     {
       //return static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 0.5f;
       return static_cast<float>(rand() % 256 - 127);
@@ -26,39 +26,45 @@ namespace HeightMap
     public:
       DiamondSquareWorker(std::vector<float> &data, const glm::uvec2 &size,
         RandGenerator randGen = RandGenerator())
-        : mData(data), mSize(size.x, size.y), mRandGenerator(randGen)
+        : mData(data), mSize(size.x, size.y), mRandGenerator(randGen),
+          mSizeP2(size.x > size.y ? Pow2(size.x) + 1 : Pow2(size.y) + 1)
       {
       }
 
       void operator()(float lb, float lt, float rt, float rb)
       {
-        const glm::vec2 poslb(0.0f, 0.0f);
-        const glm::vec2 posrt(mSize.x - 1, mSize.y - 1);
+        const glm::uvec2 poslb(0, 0);
+        const glm::uvec2 posrt(mSize.x - 1, mSize.y - 1);
 
-        mData[static_cast<unsigned int>(glm::round(poslb.y)) * mSize.y + static_cast<unsigned int>(glm::round(poslb.x))] = lb;
-        mData[static_cast<unsigned int>(glm::round(posrt.y)) * mSize.y + static_cast<unsigned int>(glm::round(poslb.x))] = lt;
-        mData[static_cast<unsigned int>(glm::round(posrt.y)) * mSize.y + static_cast<unsigned int>(glm::round(posrt.x))] = rt;
-        mData[static_cast<unsigned int>(glm::round(poslb.y)) * mSize.y + static_cast<unsigned int>(glm::round(posrt.x))] = rb;
+        mData[poslb.y * mSize.x + poslb.x] = lb;
+        mData[posrt.y * mSize.x + poslb.x] = lt;
+        mData[posrt.y * mSize.x + posrt.x] = rt;
+        mData[poslb.y * mSize.x + posrt.x] = rb;
 
         unsigned int mPointCreated = 4;
 
-        float strideX = static_cast<float>(mSize.x - 1) / 2.0f;
-        float strideY = static_cast<float>(mSize.y - 1) / 2.0f;
+        unsigned int stride = mSizeP2 / 2;
         float k = 1.0f;
-        while(strideX > 0.5f || strideY > 0.5f)
+        while(stride >= 1)
         {
           k /= 2.0f;
 
-          for(float y = strideY; y <= mSize.y - 1; y += strideY * 2.0f)
+          for(unsigned int y = stride; y < mSizeP2; y += stride * 2)
           {
-            for(float x = strideX; x <= mSize.x - 1; x += strideX * 2.0f)
+            for(unsigned int x = stride; x < mSizeP2; x += stride * 2)
             {
               // центр
-              const glm::vec2 mid(x, y);
-              const glm::vec2 plb(x - strideX, y - strideX);
-              const glm::vec2 plt(x - strideX, y + strideX);
-              const glm::vec2 prt(x + strideX, y + strideX);
-              const glm::vec2 prb(x + strideX, y - strideX);
+              const glm::uvec2 mid(x, y);
+              // ≈сли эта точка не входит в нашу область, или она находитс€ в углу нашей области
+              // не обрабатываем ее
+              if(!ContainsPoint(mid) || IsAnglePoint(mid))
+              {
+                continue;
+              }
+              const glm::uvec2 plb(x - stride, y - stride);
+              const glm::uvec2 plt(x - stride, y + stride);
+              const glm::uvec2 prt(x + stride, y + stride);
+              const glm::uvec2 prb(x + stride, y - stride);
               
               // ¬ычисл€ем высоту центровой точки.
               CreatePoint(mid, k, plb, plt, prt, prb);
@@ -67,16 +73,22 @@ namespace HeightMap
           }
 
           unsigned int column = 1;
-          for(float y = 0; y <= mSize.y - 1; y += strideY)
+          for(unsigned int y = 0; y < mSizeP2; y += stride)
           {
-            for(float x = strideX * column; x <= mSize.x - 1; x += strideX * 2.0f)
+            for(unsigned int x = stride * column; x < mSizeP2; x += stride * 2)
             {
               // центр
-              const glm::vec2 mid(x, y);
-              const glm::vec2 pl(x - strideX, y);
-              const glm::vec2 pt(x, y + strideX);
-              const glm::vec2 pr(x + strideX, y);
-              const glm::vec2 pb(x, y - strideX);
+              const glm::uvec2 mid(x, y);
+              // ≈сли эта точка не входит в нашу область, или она находитс€ в углу нашей области
+              // не обрабатываем ее
+              if(!ContainsPoint(mid) || IsAnglePoint(mid))
+              {
+                continue;
+              }
+              const glm::uvec2 pl(x - stride, y);
+              const glm::uvec2 pt(x, y + stride);
+              const glm::uvec2 pr(x + stride, y);
+              const glm::uvec2 pb(x, y - stride);
 
               // ¬ычисл€ем высоты точек на сторонах.
               CreatePoint(mid, k, pl, pt, pr, pb);
@@ -84,8 +96,8 @@ namespace HeightMap
             }
             column = column ? 0 : 1;
           }
-          strideX /= 2.0f;
-          strideY /= 2.0f;
+
+          stride /= 2;
         }
 
         printf("Points. All: %i, Created: %i\n", mSize.x * mSize.y, mPointCreated);
@@ -95,28 +107,55 @@ namespace HeightMap
       RandGenerator mRandGenerator;
       std::vector<float> &mData;
       const glm::uvec2 mSize;
+      const unsigned int mSizeP2;
 
     private:
 
-      void CreatePoint(const glm::vec2 &mid, float k, const glm::vec2 &l, const glm::vec2 &t, const glm::vec2 &r, const glm::vec2 &b)
+      void CreatePoint(const glm::uvec2 &mid, float k, const glm::uvec2 &l, const glm::uvec2 &t, const glm::uvec2 &r, const glm::uvec2 &b)
       {
         assert(ContainsPoint(mid));
-        float pl = ContainsPoint(l) ? mData[static_cast<unsigned int>(glm::round(l.y)) * mSize.x + static_cast<unsigned int>(glm::round(l.x))] : 0.0f;
-        float pt = ContainsPoint(t) ? mData[static_cast<unsigned int>(glm::round(t.y)) * mSize.x + static_cast<unsigned int>(glm::round(t.x))] : 0.0f;
-        float pr = ContainsPoint(r) ? mData[static_cast<unsigned int>(glm::round(r.y)) * mSize.x + static_cast<unsigned int>(glm::round(r.x))] : 0.0f;
-        float pb = ContainsPoint(b) ? mData[static_cast<unsigned int>(glm::round(b.y)) * mSize.x + static_cast<unsigned int>(glm::round(b.x))] : 0.0f;
+        float pl = ContainsPoint(l) ? mData[l.y * mSize.x + l.x] : 0.0f;
+        float pt = ContainsPoint(t) ? mData[t.y * mSize.x + t.x] : 0.0f;
+        float pr = ContainsPoint(r) ? mData[r.y * mSize.x + r.x] : 0.0f;
+        float pb = ContainsPoint(b) ? mData[b.y * mSize.x + b.x] : 0.0f;
 
         float pm = (pl + pt + pr + pb) / 4.0f;
         pm += 1.0f * k * mRandGenerator(mid);
 
         //printf("x: %i, y: %i = %i\n", static_cast<unsigned int>(glm::round(mid.y)), static_cast<unsigned int>(glm::round(mid.x)), 
         //  static_cast<int>(pm));
-        mData[static_cast<unsigned int>(glm::round(mid.y)) * mSize.x + static_cast<unsigned int>(glm::round(mid.x))] = pm;
+        mData[mid.y * mSize.x + mid.x] = pm;
       }
 
-      bool ContainsPoint(const glm::vec2 &point)
+      bool ContainsPoint(const glm::uvec2 &point)
       {
-        return point.x >= 0 && point.x <= mSize.x - 1 && point.y >= 0 && point.y <= mSize.y - 1;
+        return point.x >= 0 && point.x < mSize.x && point.y >= 0 && point.y < mSize.y;
+      }
+
+      bool IsAnglePoint(const glm::uvec2 &point)
+      {
+        // ≈сли это одна из угловых точек, не надо ее вычисл€ть.
+        if(point.x == 0 && point.y == 0)
+          return true;
+        if(point.x == 0 && point.y == mSize.y - 1)
+          return true;
+        if(point.x == mSize.x - 1 && point.y == 0)
+          return true;
+        if(point.x == mSize.x - 1 && point.y == mSize.y - 1)
+          return true;
+        return false;
+      }
+
+      unsigned int Pow2(unsigned int a)
+      {
+        a = a - 1;
+        a = a | (a >> 1);
+        a = a | (a >> 2);
+        a = a | (a >> 4);
+        a = a | (a >> 8);
+        a = a | (a >> 16);
+
+        return a = a + 1;
       }
     };
   }

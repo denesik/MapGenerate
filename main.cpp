@@ -52,7 +52,7 @@ std::vector<glm::vec2> Generate(const unsigned int count, const glm::uvec2 &size
 
 int main()
 {
-  glm::uvec2 size(300, 300);
+  glm::uvec2 size(400, 400);
   std::vector<float> mData;
   mData.resize((size.x) * (size.y), 0.0f);
   
