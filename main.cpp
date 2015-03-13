@@ -3,7 +3,7 @@
 #include "Triangle.h"
 #include "Rasterization.h"
 #include "image.h"
-#include "HeightMap.h"
+#include "DiamondSquare.h"
 
 #include <stdlib.h>
 #include <ctime>
@@ -67,7 +67,7 @@ int main()
   std::vector<float> mData;
   mData.resize((size.x) * (size.y), 0.0f);
   
-  HeightMap::DiamondSquare(mData, size, 20, 0.0f, 0.0f, 0.0f, 0.0f);
+  DiamondSquare::DiamondSquare(mData, size, 20, 0.0f, 0.0f, 0.0f, 0.0f);
 
   Image image;
   image.Resize(size.x, size.y);

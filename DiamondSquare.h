@@ -1,19 +1,29 @@
 #pragma once
-#ifndef HEIGHT_MAP_H__
-#define HEIGHT_MAP_H__
+#ifndef DIAMOND_SQUARE_H__
+#define DIAMOND_SQUARE_H__
 
 #include <glm/glm.hpp>
 #include <vector>
 
 
-namespace HeightMap
+namespace DiamondSquare
 {
+  /// Генератор высот в точках для DiamondSquare
   struct PointGenerator
   {
+    /// @param data Карта высот.
+    /// @param size Размер карты высот.
+    /// @param roughness Коэффициент шероховатости.
     PointGenerator(std::vector<float> &data, const glm::uvec2 &size, float roughness)
       : mData(data), mSize(size), mRoughness(roughness)
     {
     }
+    /// @param mid Точка, для которой нужно генерировать высоту.
+    /// @param k Коэффициент высоты для данной точки.
+    /// @param l Левая точка.
+    /// @param t Верхняя точка.
+    /// @param r Правая точка.
+    /// @param b Нижняя точка.
     float operator()(const glm::uvec2 &mid, float k, 
                      const glm::uvec2 &l, const glm::uvec2 &t, const glm::uvec2 &r, const glm::uvec2 &b)
     {
@@ -44,6 +54,23 @@ namespace HeightMap
     const float mRoughness;
   }; 
 
+  /// Генератор шума методом Diamond Square с использованием заданного генератора точек.
+  template<class PointGenerator>
+  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size,
+                     float lb, float lt, float rt, float tb,
+                     PointGenerator generator = PointGenerator())
+  {
+    DiamondSquareImpl::DiamondSquareWorker<PointGenerator>(data, size, generator)(lb, lt, rt, tb);
+  }
+
+  /// Генератор шума методом Diamond Square с использованием генератора точек по умолчанию.
+  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size, float roughness,
+                     float lb, float lt, float rt, float tb)
+  {
+    DiamondSquare(data, size, lb, lt, rt, tb, PointGenerator(data, size, roughness));
+  }
+
+
   namespace DiamondSquareImpl
   {
     template<class RandGenerator>
@@ -52,7 +79,7 @@ namespace HeightMap
     public:
       DiamondSquareWorker(std::vector<float> &data, const glm::uvec2 &size, PointGenerator generator = PointGenerator())
         : mData(data), mSize(size.x, size.y), mPointGenerator(generator),
-          mSizeP2(size.x > size.y ? Pow2(size.x - 1) + 1 : Pow2(size.y - 1) + 1)
+        mSizeP2(size.x > size.y ? Pow2(size.x - 1) + 1 : Pow2(size.y - 1) + 1)
       {
       }
 
@@ -87,7 +114,7 @@ namespace HeightMap
               const glm::uvec2 plt(x - stride, y + stride);
               const glm::uvec2 prt(x + stride, y + stride);
               const glm::uvec2 prb(x + stride, y - stride);
-              
+
               // Вычисляем высоту центровой точки.
               mData[mid.y * mSize.x + mid.x] = glm::clamp(mPointGenerator(mid, k, plb, plt, prt, prb), -1.0f, 1.0f);
             }
@@ -163,24 +190,7 @@ namespace HeightMap
       }
     };
   }
-
-  /// Генератор шума методом Diamond Square с использованием заданного генератора случайных чисел.
-  template<class PointGenerator>
-  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size,
-                     float lb, float lt, float rt, float tb,
-                     PointGenerator generator = PointGenerator())
-  {
-    DiamondSquareImpl::DiamondSquareWorker<PointGenerator>(data, size, generator)(lb, lt, rt, tb);
-  }
-
-  /// Генератор шума методом Diamond Square с использованием генератора точек по умолчанию.
-  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size, float roughness,
-                     float lb, float lt, float rt, float tb)
-  {
-    DiamondSquare(data, size, lb, lt, rt, tb, PointGenerator(data, size, roughness));
-  }
-
 }
 
 
-#endif // HEIGHT_MAP_H__
+#endif // DIAMOND_SQUARE_H__
