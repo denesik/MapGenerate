@@ -13,8 +13,7 @@ namespace HeightMap
   {
     float operator()(const glm::uvec2 &)
     {
-      //return static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 0.5f;
-      return static_cast<float>(rand() % 256 - 127);
+      return static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 0.5f;
     }
   };
 
@@ -24,10 +23,10 @@ namespace HeightMap
     class DiamondSquareWorker
     {
     public:
-      DiamondSquareWorker(std::vector<float> &data, const glm::uvec2 &size,
+      DiamondSquareWorker(std::vector<float> &data, const glm::uvec2 &size, float roughness,
         RandGenerator randGen = RandGenerator())
-        : mData(data), mSize(size.x, size.y), mRandGenerator(randGen),
-          mSizeP2(size.x > size.y ? Pow2(size.x) + 1 : Pow2(size.y) + 1)
+        : mData(data), mSize(size.x, size.y), mRoughness(roughness), mRandGenerator(randGen),
+          mSizeP2(size.x > size.y ? Pow2(size.x - 1) + 1 : Pow2(size.y - 1) + 1)
       {
       }
 
@@ -41,14 +40,9 @@ namespace HeightMap
         mData[posrt.y * mSize.x + posrt.x] = rt;
         mData[poslb.y * mSize.x + posrt.x] = rb;
 
-        unsigned int mPointCreated = 4;
-
         unsigned int stride = mSizeP2 / 2;
-        float k = 1.0f;
         while(stride >= 1)
         {
-          k /= 2.0f;
-
           for(unsigned int y = stride; y < mSizeP2; y += stride * 2)
           {
             for(unsigned int x = stride; x < mSizeP2; x += stride * 2)
@@ -67,8 +61,7 @@ namespace HeightMap
               const glm::uvec2 prb(x + stride, y - stride);
               
               // Вычисляем высоту центровой точки.
-              CreatePoint(mid, k, plb, plt, prt, prb);
-              ++mPointCreated;
+              CreatePoint(mid, stride, plb, plt, prt, prb);
             }
           }
 
@@ -91,27 +84,26 @@ namespace HeightMap
               const glm::uvec2 pb(x, y - stride);
 
               // Вычисляем высоты точек на сторонах.
-              CreatePoint(mid, k, pl, pt, pr, pb);
-              ++mPointCreated;
+              CreatePoint(mid, stride, pl, pt, pr, pb);
             }
             column = column ? 0 : 1;
           }
 
           stride /= 2;
         }
-
-        printf("Points. All: %i, Created: %i\n", mSize.x * mSize.y, mPointCreated);
       }
 
     private:
-      RandGenerator mRandGenerator;
-      std::vector<float> &mData;
-      const glm::uvec2 mSize;
-      const unsigned int mSizeP2;
+      RandGenerator mRandGenerator; // Генератор случайных чисел.
+      std::vector<float> &mData;    // Карта высот.
+      const glm::uvec2 mSize;       // Размер карты высот.
+      const unsigned int mSizeP2;   // Размер области работы алгоритма.
+      const float mRoughness;
 
     private:
 
-      void CreatePoint(const glm::uvec2 &mid, float k, const glm::uvec2 &l, const glm::uvec2 &t, const glm::uvec2 &r, const glm::uvec2 &b)
+      /// Сгенерировать высоту для заданной точки.
+      void CreatePoint(const glm::uvec2 &mid, unsigned int size, const glm::uvec2 &l, const glm::uvec2 &t, const glm::uvec2 &r, const glm::uvec2 &b)
       {
         assert(ContainsPoint(mid));
         float pl = ContainsPoint(l) ? mData[l.y * mSize.x + l.x] : 0.0f;
@@ -119,22 +111,23 @@ namespace HeightMap
         float pr = ContainsPoint(r) ? mData[r.y * mSize.x + r.x] : 0.0f;
         float pb = ContainsPoint(b) ? mData[b.y * mSize.x + b.x] : 0.0f;
 
+        float k = static_cast<float>(size) / static_cast<float>(mSizeP2 - 1);
         float pm = (pl + pt + pr + pb) / 4.0f;
-        pm += 1.0f * k * mRandGenerator(mid);
+        pm += mRoughness * k * mRandGenerator(mid);
+        pm = glm::clamp(pm, -1.0f, 1.0f);
 
-        //printf("x: %i, y: %i = %i\n", static_cast<unsigned int>(glm::round(mid.y)), static_cast<unsigned int>(glm::round(mid.x)), 
-        //  static_cast<int>(pm));
         mData[mid.y * mSize.x + mid.x] = pm;
       }
 
+      // Находится ли точка в рабочей области.
       bool ContainsPoint(const glm::uvec2 &point)
       {
         return point.x >= 0 && point.x < mSize.x && point.y >= 0 && point.y < mSize.y;
       }
 
+      /// Находится ли точка в одном из углу рабочей области.
       bool IsAnglePoint(const glm::uvec2 &point)
       {
-        // Если это одна из угловых точек, не надо ее вычислять.
         if(point.x == 0 && point.y == 0)
           return true;
         if(point.x == 0 && point.y == mSize.y - 1)
@@ -146,6 +139,7 @@ namespace HeightMap
         return false;
       }
 
+      /// Найти ближайшую степень двойки к числу.
       unsigned int Pow2(unsigned int a)
       {
         a = a - 1;
@@ -162,18 +156,18 @@ namespace HeightMap
 
   /// Генератор шума методом Diamond Square с использованием заданного генератора случайных чисел.
   template<class RandGenerator>
-  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size,
+  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size, float roughness,
                      float lb, float lt, float rt, float tb,
                      RandGenerator randGen = RandGenerator())
   {
-    DiamondSquareImpl::DiamondSquareWorker<RandGenerator>(data, size, randGen)(lb, lt, rt, tb);
+    DiamondSquareImpl::DiamondSquareWorker<RandGenerator>(data, size, roughness, randGen)(lb, lt, rt, tb);
   }
 
   /// Генератор шума методом Diamond Square с использованием генератора случайных чисел по умолчанию.
-  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size,
+  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size, float roughness,
                      float lb, float lt, float rt, float tb)
   {
-    DiamondSquare(data, size, lb, lt, rt, tb, DiamondSquareRandomDefault());
+    DiamondSquare(data, size, roughness, lb, lt, rt, tb, DiamondSquareRandomDefault());
   }
 
 }

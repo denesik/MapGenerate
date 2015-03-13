@@ -49,14 +49,25 @@ std::vector<glm::vec2> Generate(const unsigned int count, const glm::uvec2 &size
   return std::move(points);
 }
 
+void Print(const std::vector<float> &data, const glm::uvec2 &size)
+{
+  for(unsigned int y = 0; y < size.y; ++y)
+  {
+    for(unsigned int x = 0; x < size.x; ++x)
+    {
+      printf("%f ", data[y * size.x + x]);
+    }
+    printf("\n");
+  }
+}
 
 int main()
 {
-  glm::uvec2 size(400, 400);
+  glm::uvec2 size(500, 50);
   std::vector<float> mData;
   mData.resize((size.x) * (size.y), 0.0f);
   
-  HeightMap::DiamondSquare(mData, size, 0.0f, 0.0f, 0.0f, 0.0f);
+  HeightMap::DiamondSquare(mData, size, 40, 0.0f, 0.0f, 0.0f, 0.0f);
 
   Image image;
   image.Resize(size.x, size.y);
@@ -66,8 +77,9 @@ int main()
   {
     for(unsigned int x = 0; x < size.x; ++x)
     {
-      //unsigned int color = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 128.0f);
-      unsigned int color = static_cast<unsigned char>(mData[y * size.x + x] + 128.0f);
+      //mData[y * size.x + x] = mData[y * size.x + x] > 0 ? 
+      //  mData[y * size.x + x] * mData[y * size.x + x] : - (mData[y * size.x + x] * mData[y * size.x + x]);
+      unsigned int color = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 127.5f);
       color |= color << 8;
       color |= color << 8;
       color |= color << 8;
