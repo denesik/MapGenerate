@@ -63,12 +63,17 @@ void Print(const std::vector<float> &data, const glm::uvec2 &size)
 
 int main()
 {
-  glm::uvec2 size(300, 100);
+  unsigned int seed = static_cast<unsigned int>(time(NULL));
+  srand(seed);
+
+  glm::uvec2 size(1000, 1000);
   std::vector<float> mData;
   mData.resize((size.x) * (size.y), 0.0f);
   
   DiamondSquare::DiamondSquare(mData, size, 20, 0.0f, 0.0f, 0.0f, 0.0f);
 
+
+/*
   Image image;
   image.Resize(size.x, size.y);
   image.Fill(0xFFFFFFFF);
@@ -86,6 +91,17 @@ int main()
       color |= 0x000000FF;
       image.DrawPoint(glm::uvec2(x, y), color);
     }
+  }*/
+
+  Image image;
+  image.Resize(size.x, 256);
+  image.Fill(0xFFFFFFFF);
+
+  unsigned int y = size.y / 2;
+  for(unsigned int x = 0; x < size.x; ++x)
+  {
+    unsigned int height = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 127.5f);
+    image.DrawPoint(glm::uvec2(x, height), 0x000000FF);
   }
 
   image.Save("img.png");
