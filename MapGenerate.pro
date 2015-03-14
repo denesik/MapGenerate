@@ -20,5 +20,6 @@ HEADERS += \
     lodepng/lodepng.h \
     Triangle.h \
     Rasterization.h \
-    image.h
+    image.h \
+    DiamondSquare.h
 

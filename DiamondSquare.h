@@ -8,24 +8,24 @@
 
 namespace DiamondSquare
 {
-  /// Генератор высот в точках для DiamondSquare
+  /// Р“РµРЅРµСЂР°С‚РѕСЂ РІС‹СЃРѕС‚ РІ С‚РѕС‡РєР°С… РґР»СЏ DiamondSquare
   struct PointGenerator
   {
-    /// @param data Карта высот.
-    /// @param size Размер карты высот.
-    /// @param roughness Коэффициент шероховатости.
+    /// @param data РљР°СЂС‚Р° РІС‹СЃРѕС‚.
+    /// @param size Р Р°Р·РјРµСЂ РєР°СЂС‚С‹ РІС‹СЃРѕС‚.
+    /// @param roughness РљРѕСЌС„С„РёС†РёРµРЅС‚ С€РµСЂРѕС…РѕРІР°С‚РѕСЃС‚Рё.
     PointGenerator(std::vector<float> &data, const glm::uvec2 &size, float roughness)
       : mData(data), mSize(size), mRoughness(roughness)
     {
     }
-    /// @param mid Точка, для которой нужно генерировать высоту.
-    /// @param k Коэффициент высоты для данной точки.
-    /// @param l Левая точка.
-    /// @param t Верхняя точка.
-    /// @param r Правая точка.
-    /// @param b Нижняя точка.
-    float operator()(const glm::uvec2 &mid, float k, 
-                     const glm::uvec2 &l, const glm::uvec2 &t, const glm::uvec2 &r, const glm::uvec2 &b)
+    /// @param mid РўРѕС‡РєР°, РґР»СЏ РєРѕС‚РѕСЂРѕР№ РЅСѓР¶РЅРѕ РіРµРЅРµСЂРёСЂРѕРІР°С‚СЊ РІС‹СЃРѕС‚Сѓ.
+    /// @param k РљРѕСЌС„С„РёС†РёРµРЅС‚ РІС‹СЃРѕС‚С‹ РґР»СЏ РґР°РЅРЅРѕР№ С‚РѕС‡РєРё.
+    /// @param l Р›РµРІР°СЏ С‚РѕС‡РєР°.
+    /// @param t Р’РµСЂС…РЅСЏСЏ С‚РѕС‡РєР°.
+    /// @param r РџСЂР°РІР°СЏ С‚РѕС‡РєР°.
+    /// @param b РќРёР¶РЅСЏСЏ С‚РѕС‡РєР°.
+    float operator()(const glm::uvec2 &, float k,
+                     const glm::ivec2 &l, const glm::ivec2 &t, const glm::ivec2 &r, const glm::ivec2 &b)
     {
       float pl = ContainsPoint(l) ? mData[l.y * mSize.x + l.x] : 0.0f;
       float pt = ContainsPoint(t) ? mData[t.y * mSize.x + t.x] : 0.0f;
@@ -38,10 +38,11 @@ namespace DiamondSquare
       return pm;
     }
 
-    // Находится ли точка в рабочей области.
-    bool ContainsPoint(const glm::uvec2 &point)
+    // РќР°С…РѕРґРёС‚СЃСЏ Р»Рё С‚РѕС‡РєР° РІ СЂР°Р±РѕС‡РµР№ РѕР±Р»Р°СЃС‚Рё.
+    bool ContainsPoint(const glm::ivec2 &point)
     {
-      return point.x >= 0 && point.x < mSize.x && point.y >= 0 && point.y < mSize.y;
+      return point.x >= 0 && point.x < static_cast<int>(mSize.x) &&
+             point.y >= 0 && point.y < static_cast<int>(mSize.y);
     }
 
     float Rand()
@@ -53,23 +54,6 @@ namespace DiamondSquare
     const glm::uvec2 &mSize;
     const float mRoughness;
   }; 
-
-  /// Генератор шума методом Diamond Square с использованием заданного генератора точек.
-  template<class PointGenerator>
-  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size,
-                     float lb, float lt, float rt, float tb,
-                     PointGenerator generator = PointGenerator())
-  {
-    DiamondSquareImpl::DiamondSquareWorker<PointGenerator>(data, size, generator)(lb, lt, rt, tb);
-  }
-
-  /// Генератор шума методом Diamond Square с использованием генератора точек по умолчанию.
-  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size, float roughness,
-                     float lb, float lt, float rt, float tb)
-  {
-    DiamondSquare(data, size, lb, lt, rt, tb, PointGenerator(data, size, roughness));
-  }
-
 
   namespace DiamondSquareImpl
   {
@@ -102,20 +86,20 @@ namespace DiamondSquare
           {
             for(unsigned int x = stride; x < mSizeP2; x += stride * 2)
             {
-              // центр
+              // С†РµРЅС‚СЂ
               const glm::uvec2 mid(x, y);
-              // Если эта точка не входит в нашу область, или она находится в углу нашей области
-              // не обрабатываем ее
+              // Р•СЃР»Рё СЌС‚Р° С‚РѕС‡РєР° РЅРµ РІС…РѕРґРёС‚ РІ РЅР°С€Сѓ РѕР±Р»Р°СЃС‚СЊ, РёР»Рё РѕРЅР° РЅР°С…РѕРґРёС‚СЃСЏ РІ СѓРіР»Сѓ РЅР°С€РµР№ РѕР±Р»Р°СЃС‚Рё
+              // РЅРµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј РµРµ
               if(!ContainsPoint(mid) || IsAnglePoint(mid))
               {
                 continue;
               }
-              const glm::uvec2 plb(x - stride, y - stride);
-              const glm::uvec2 plt(x - stride, y + stride);
-              const glm::uvec2 prt(x + stride, y + stride);
-              const glm::uvec2 prb(x + stride, y - stride);
+              const glm::ivec2 plb(x - stride, y - stride);
+              const glm::ivec2 plt(x - stride, y + stride);
+              const glm::ivec2 prt(x + stride, y + stride);
+              const glm::ivec2 prb(x + stride, y - stride);
 
-              // Вычисляем высоту центровой точки.
+              // Р’С‹С‡РёСЃР»СЏРµРј РІС‹СЃРѕС‚Сѓ С†РµРЅС‚СЂРѕРІРѕР№ С‚РѕС‡РєРё.
               mData[mid.y * mSize.x + mid.x] = glm::clamp(mPointGenerator(mid, k, plb, plt, prt, prb), -1.0f, 1.0f);
             }
           }
@@ -125,20 +109,20 @@ namespace DiamondSquare
           {
             for(unsigned int x = stride * column; x < mSizeP2; x += stride * 2)
             {
-              // центр
+              // С†РµРЅС‚СЂ
               const glm::uvec2 mid(x, y);
-              // Если эта точка не входит в нашу область, или она находится в углу нашей области
-              // не обрабатываем ее
+              // Р•СЃР»Рё СЌС‚Р° С‚РѕС‡РєР° РЅРµ РІС…РѕРґРёС‚ РІ РЅР°С€Сѓ РѕР±Р»Р°СЃС‚СЊ, РёР»Рё РѕРЅР° РЅР°С…РѕРґРёС‚СЃСЏ РІ СѓРіР»Сѓ РЅР°С€РµР№ РѕР±Р»Р°СЃС‚Рё
+              // РЅРµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј РµРµ
               if(!ContainsPoint(mid) || IsAnglePoint(mid))
               {
                 continue;
               }
-              const glm::uvec2 pl(x - stride, y);
-              const glm::uvec2 pt(x, y + stride);
-              const glm::uvec2 pr(x + stride, y);
-              const glm::uvec2 pb(x, y - stride);
+              const glm::ivec2 pl(x - stride, y);
+              const glm::ivec2 pt(x, y + stride);
+              const glm::ivec2 pr(x + stride, y);
+              const glm::ivec2 pb(x, y - stride);
 
-              // Вычисляем высоты точек на сторонах.
+              // Р’С‹С‡РёСЃР»СЏРµРј РІС‹СЃРѕС‚С‹ С‚РѕС‡РµРє РЅР° СЃС‚РѕСЂРѕРЅР°С….
               mData[mid.y * mSize.x + mid.x] = glm::clamp(mPointGenerator(mid, k, pl, pt, pr, pb), -1.0f, 1.0f);
             }
             column = column ? 0 : 1;
@@ -149,20 +133,20 @@ namespace DiamondSquare
       }
 
     private:
-      PointGenerator mPointGenerator; // Генератор высот для точек.
-      std::vector<float> &mData;    // Карта высот.
-      const glm::uvec2 mSize;       // Размер карты высот.
-      const unsigned int mSizeP2;   // Размер области работы алгоритма.
+      std::vector<float> &mData;      // РљР°СЂС‚Р° РІС‹СЃРѕС‚.
+      const glm::uvec2 mSize;         // Р Р°Р·РјРµСЂ РєР°СЂС‚С‹ РІС‹СЃРѕС‚.
+      PointGenerator mPointGenerator; // Р“РµРЅРµСЂР°С‚РѕСЂ РІС‹СЃРѕС‚ РґР»СЏ С‚РѕС‡РµРє.
+      const unsigned int mSizeP2;     // Р Р°Р·РјРµСЂ РѕР±Р»Р°СЃС‚Рё СЂР°Р±РѕС‚С‹ Р°Р»РіРѕСЂРёС‚РјР°.
 
     private:
 
-      /// Находится ли точка в рабочей области.
+      /// РќР°С…РѕРґРёС‚СЃСЏ Р»Рё С‚РѕС‡РєР° РІ СЂР°Р±РѕС‡РµР№ РѕР±Р»Р°СЃС‚Рё.
       bool ContainsPoint(const glm::uvec2 &point)
       {
         return point.x >= 0 && point.x < mSize.x && point.y >= 0 && point.y < mSize.y;
       }
 
-      /// Находится ли точка в одном из углу рабочей области.
+      /// РќР°С…РѕРґРёС‚СЃСЏ Р»Рё С‚РѕС‡РєР° РІ РѕРґРЅРѕРј РёР· СѓРіР»Сѓ СЂР°Р±РѕС‡РµР№ РѕР±Р»Р°СЃС‚Рё.
       bool IsAnglePoint(const glm::uvec2 &point)
       {
         if(point.x == 0 && point.y == 0)
@@ -176,7 +160,7 @@ namespace DiamondSquare
         return false;
       }
 
-      /// Найти ближайшую степень двойки к числу.
+      /// РќР°Р№С‚Рё Р±Р»РёР¶Р°Р№С€СѓСЋ СЃС‚РµРїРµРЅСЊ РґРІРѕР№РєРё Рє С‡РёСЃР»Сѓ.
       unsigned int Pow2(unsigned int a)
       {
         a = a - 1;
@@ -189,6 +173,22 @@ namespace DiamondSquare
         return a = a + 1;
       }
     };
+  }
+
+  /// Р“РµРЅРµСЂР°С‚РѕСЂ С€СѓРјР° РјРµС‚РѕРґРѕРј Diamond Square СЃ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµРј Р·Р°РґР°РЅРЅРѕРіРѕ РіРµРЅРµСЂР°С‚РѕСЂР° С‚РѕС‡РµРє.
+  template<class PointGenerator>
+  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size,
+                     float lb, float lt, float rt, float tb,
+                     PointGenerator generator = PointGenerator())
+  {
+    DiamondSquareImpl::DiamondSquareWorker<PointGenerator>(data, size, generator)(lb, lt, rt, tb);
+  }
+
+  /// Р“РµРЅРµСЂР°С‚РѕСЂ С€СѓРјР° РјРµС‚РѕРґРѕРј Diamond Square СЃ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµРј РіРµРЅРµСЂР°С‚РѕСЂР° С‚РѕС‡РµРє РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ.
+  void DiamondSquare(std::vector<float> &data, const glm::uvec2 &size, float roughness,
+                     float lb, float lt, float rt, float tb)
+  {
+    DiamondSquare(data, size, lb, lt, rt, tb, PointGenerator(data, size, roughness));
   }
 }
 
