@@ -17,6 +17,7 @@ namespace DiamondSquare
     PointGenerator(std::vector<float> &data, const glm::uvec2 &size, float roughness)
       : mData(data), mSize(size), mRoughness(roughness)
     {
+      srand(3);
     }
     /// @param mid Точка, для которой нужно генерировать высоту.
     /// @param k Коэффициент высоты для данной точки.
@@ -47,7 +48,7 @@ namespace DiamondSquare
 
     float Rand()
     {
-      return static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 0.5f;
+      return static_cast<float>(rand() % 256) / 255.0f - 0.5f;
     }
 
     const std::vector<float> &mData;
@@ -100,7 +101,8 @@ namespace DiamondSquare
               const glm::ivec2 prb(x + stride, y - stride);
 
               // Вычисляем высоту центровой точки.
-              mData[mid.y * mSize.x + mid.x] = glm::clamp(mPointGenerator(mid, k, plb, plt, prt, prb), -1.0f, 1.0f);
+              //mData[mid.y * mSize.x + mid.x] = Modf(mPointGenerator(mid, k, plb, plt, prt, prb));
+              mData[mid.y * mSize.x + mid.x] = glm::clamp((mPointGenerator(mid, k, plb, plt, prt, prb)), -1.0f, 1.0f);
             }
           }
 
@@ -123,6 +125,7 @@ namespace DiamondSquare
               const glm::ivec2 pb(x, y - stride);
 
               // Вычисляем высоты точек на сторонах.
+              //mData[mid.y * mSize.x + mid.x] = Modf(mPointGenerator(mid, k, pl, pt, pr, pb));
               mData[mid.y * mSize.x + mid.x] = glm::clamp(mPointGenerator(mid, k, pl, pt, pr, pb), -1.0f, 1.0f);
             }
             column = column ? 0 : 1;
@@ -171,6 +174,20 @@ namespace DiamondSquare
         a = a | (a >> 16);
 
         return a = a + 1;
+      }
+
+      float Modf(float val)
+      {
+        while(val > 1.0f)
+        {
+          val -= 1.0f;
+        }
+        while(val < -1.0f)
+        {
+          val += 1.0f;
+        }
+
+        return val;
       }
     };
   }

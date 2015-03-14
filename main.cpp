@@ -4,6 +4,7 @@
 #include "Rasterization.h"
 #include "image.h"
 #include "DiamondSquare.h"
+#include "gif-h/gif.h"
 
 #include <stdlib.h>
 #include <ctime>
@@ -63,48 +64,58 @@ void Print(const std::vector<float> &data, const glm::uvec2 &size)
 
 int main()
 {
-  unsigned int seed = static_cast<unsigned int>(time(NULL));
-  srand(seed);
-
-  glm::uvec2 size(1000, 1000);
+  glm::uvec2 size(1000, 20);
   std::vector<float> mData;
   mData.resize((size.x) * (size.y), 0.0f);
   
-  DiamondSquare::DiamondSquare(mData, size, 20, 0.0f, 0.0f, 0.0f, 0.0f);
+  GifWriter gw;
+  GifBegin(&gw, "height.gif", size.x, 256, 50);
 
-
-/*
-  Image image;
-  image.Resize(size.x, size.y);
-  image.Fill(0xFFFFFFFF);
-
-  for(unsigned int y = 0; y < size.y; ++y)
+  for(float i = 0; i < 40; i += 0.5f)
   {
-    for(unsigned int x = 0; x < size.x; ++x)
+    DiamondSquare::DiamondSquare(mData, size, i, 0.0f, 0.0f, 0.0f, 0.0f);
     {
-      //mData[y * size.x + x] = mData[y * size.x + x] > 0 ? 
-      //  mData[y * size.x + x] * mData[y * size.x + x] : - (mData[y * size.x + x] * mData[y * size.x + x]);
-      unsigned int color = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 127.5f);
-      color |= color << 8;
-      color |= color << 8;
-      color |= color << 8;
-      color |= 0x000000FF;
-      image.DrawPoint(glm::uvec2(x, y), color);
+      Image image;
+      image.Resize(size.x, 256);
+      image.Fill(0xFFFFFFFF);
+
+      unsigned int y = size.y / 2;
+      for(unsigned int x = 0; x < size.x; ++x)
+      {
+        unsigned int height = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 127.5f);
+        image.DrawPoint(glm::uvec2(x, height), 0x000000FF);
+      }
+
+      //image.Save("img.png");
+      GifWriteFrame(&gw, &image.Raw()[0], size.x, 256, 20);
     }
-  }*/
-
-  Image image;
-  image.Resize(size.x, 256);
-  image.Fill(0xFFFFFFFF);
-
-  unsigned int y = size.y / 2;
-  for(unsigned int x = 0; x < size.x; ++x)
-  {
-    unsigned int height = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 127.5f);
-    image.DrawPoint(glm::uvec2(x, height), 0x000000FF);
   }
+  GifEnd(&gw);
 
-  image.Save("img.png");
+
+  /*
+  {
+    Image img1;
+    img1.Resize(size.x, size.y);
+    img1.Fill(0xFFFFFFFF);
+
+    for(unsigned int y = 0; y < size.y; ++y)
+    {
+      for(unsigned int x = 0; x < size.x; ++x)
+      {
+        //mData[y * size.x + x] = mData[y * size.x + x] > 0 ?
+        //  mData[y * size.x + x] * mData[y * size.x + x] : - (mData[y * size.x + x] * mData[y * size.x + x]);
+        unsigned int color = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 127.5f);
+        color |= color << 8;
+        color |= color << 8;
+        color |= color << 8;
+        color |= 0x000000FF;
+        img1.DrawPoint(glm::uvec2(x, y), color);
+      }
+    }
+    img1.Save("img1.png");
+  }
+  */
 
   /*
   glm::uvec2 size(500, 500);

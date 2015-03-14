@@ -21,5 +21,6 @@ HEADERS += \
     Triangle.h \
     Rasterization.h \
     image.h \
-    DiamondSquare.h
+    DiamondSquare.h \
+    gif-h/gif.h
 
