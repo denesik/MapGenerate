@@ -17,7 +17,7 @@ namespace DiamondSquare
     PointGenerator(std::vector<float> &data, const glm::uvec2 &size, float roughness)
       : mData(data), mSize(size), mRoughness(roughness)
     {
-      srand(3);
+      srand(8);
     }
     /// @param mid Точка, для которой нужно генерировать высоту.
     /// @param k Коэффициент высоты для данной точки.
@@ -78,15 +78,19 @@ namespace DiamondSquare
         mData[posrt.y * mSize.x + posrt.x] = rt;
         mData[poslb.y * mSize.x + posrt.x] = rb;
 
+        const glm::uvec2 wzOffset((mSizeP2 - mSize.x) / 2, (mSizeP2 - mSize.y) / 2);
+
         unsigned int stride = mSizeP2 / 2;
         while(stride >= 1)
         {
           float k = static_cast<float>(stride) / static_cast<float>(mSizeP2 - 1);
 
-          for(unsigned int y = stride; y < mSizeP2; y += stride * 2)
+          for(unsigned int gy = stride; gy < mSizeP2; gy += stride * 2)
           {
-            for(unsigned int x = stride; x < mSizeP2; x += stride * 2)
+            for(unsigned int gx = stride; gx < mSizeP2; gx += stride * 2)
             {
+              unsigned int x = gx - wzOffset.x;
+              unsigned int y = gy - wzOffset.y;
               // центр
               const glm::uvec2 mid(x, y);
               // Если эта точка не входит в нашу область, или она находится в углу нашей области
@@ -107,10 +111,12 @@ namespace DiamondSquare
           }
 
           unsigned int column = 1;
-          for(unsigned int y = 0; y < mSizeP2; y += stride)
+          for(unsigned int gy = 0; gy < mSizeP2; gy += stride)
           {
-            for(unsigned int x = stride * column; x < mSizeP2; x += stride * 2)
+            for(unsigned int gx = stride * column; gx < mSizeP2; gx += stride * 2)
             {
+              unsigned int x = gx - wzOffset.x;
+              unsigned int y = gy - wzOffset.y;
               // центр
               const glm::uvec2 mid(x, y);
               // Если эта точка не входит в нашу область, или она находится в углу нашей области

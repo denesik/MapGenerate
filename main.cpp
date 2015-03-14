@@ -64,22 +64,23 @@ void Print(const std::vector<float> &data, const glm::uvec2 &size)
 
 int main()
 {
-  glm::uvec2 size(1000, 20);
+  glm::uvec2 size(520, 520);
   std::vector<float> mData;
   mData.resize((size.x) * (size.y), 0.0f);
   
   GifWriter gw;
   GifBegin(&gw, "height.gif", size.x, 256, 50);
 
-  for(float i = 0; i < 40; i += 0.5f)
+  //for(float i = 0; i < 30; i += 0.2f)
+  for(unsigned int y = 0; y < size.y; ++y)
   {
-    DiamondSquare::DiamondSquare(mData, size, i, 0.0f, 0.0f, 0.0f, 0.0f);
+    DiamondSquare::DiamondSquare(mData, size, 50, 0.0f, 0.0f, 0.0f, 0.0f);
     {
       Image image;
       image.Resize(size.x, 256);
       image.Fill(0xFFFFFFFF);
 
-      unsigned int y = size.y / 2;
+      //unsigned int y = size.y / 2;
       for(unsigned int x = 0; x < size.x; ++x)
       {
         unsigned int height = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 127.5f);
@@ -87,13 +88,13 @@ int main()
       }
 
       //image.Save("img.png");
-      GifWriteFrame(&gw, &image.Raw()[0], size.x, 256, 20);
+      GifWriteFrame(&gw, &image.Raw()[0], size.x, 256, 5);
     }
   }
   GifEnd(&gw);
 
 
-  /*
+
   {
     Image img1;
     img1.Resize(size.x, size.y);
@@ -115,7 +116,7 @@ int main()
     }
     img1.Save("img1.png");
   }
-  */
+
 
   /*
   glm::uvec2 size(500, 500);
