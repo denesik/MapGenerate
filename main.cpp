@@ -64,23 +64,25 @@ void Print(const std::vector<float> &data, const glm::uvec2 &size)
 
 int main()
 {
-  glm::uvec2 size(520, 520);
+  srand(static_cast<unsigned int>(time(NULL)));
+
+  glm::uvec2 size(1000, 500);
   std::vector<float> mData;
   mData.resize((size.x) * (size.y), 0.0f);
   
   GifWriter gw;
   GifBegin(&gw, "height.gif", size.x, 256, 50);
 
-  //for(float i = 0; i < 30; i += 0.2f)
+  //for(float i = 0; i < 10; i += 0.1f)
   for(unsigned int y = 0; y < size.y; ++y)
   {
-    DiamondSquare::DiamondSquare(mData, size, 50, 0.0f, 0.0f, 0.0f, 0.0f);
+    DiamondSquare::DiamondSquare(mData, size, 5, 0.0f, 0.0f, 0.0f, 0.0f);
     {
       Image image;
       image.Resize(size.x, 256);
       image.Fill(0xFFFFFFFF);
 
-      //unsigned int y = size.y / 2;
+      //unsigned int y = 0;
       for(unsigned int x = 0; x < size.x; ++x)
       {
         unsigned int height = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 127.5f);
@@ -88,7 +90,7 @@ int main()
       }
 
       //image.Save("img.png");
-      GifWriteFrame(&gw, &image.Raw()[0], size.x, 256, 5);
+      GifWriteFrame(&gw, &image.Raw()[0], size.x, 256, 10);
     }
   }
   GifEnd(&gw);
@@ -107,11 +109,14 @@ int main()
         //mData[y * size.x + x] = mData[y * size.x + x] > 0 ?
         //  mData[y * size.x + x] * mData[y * size.x + x] : - (mData[y * size.x + x] * mData[y * size.x + x]);
         unsigned int color = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 127.5f);
-        color |= color << 8;
-        color |= color << 8;
-        color |= color << 8;
-        color |= 0x000000FF;
-        img1.DrawPoint(glm::uvec2(x, y), color);
+
+        unsigned int c = 0x000000FF;
+        c |= color << 8;
+        c |= color << 16;
+        c |= color << 24;
+        if(color <= 140) c |= 0x0000FFFF;
+        if(color > 140 && color <= 200) c |= 0x00FF00FF;
+        img1.DrawPoint(glm::uvec2(x, y), c);
       }
     }
     img1.Save("img1.png");

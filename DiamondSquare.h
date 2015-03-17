@@ -17,7 +17,7 @@ namespace DiamondSquare
     PointGenerator(std::vector<float> &data, const glm::uvec2 &size, float roughness)
       : mData(data), mSize(size), mRoughness(roughness)
     {
-      srand(8);
+      //srand(7);
     }
     /// @param mid Точка, для которой нужно генерировать высоту.
     /// @param k Коэффициент высоты для данной точки.
@@ -36,6 +36,8 @@ namespace DiamondSquare
       float pm = (pl + pt + pr + pb) / 4.0f;
       pm += mRoughness * k * Rand();
 
+      //pm = glm::abs(pm);
+      //pm = glm::clamp(pm, 0.0f, 0.5f);
       return pm;
     }
 
@@ -73,6 +75,8 @@ namespace DiamondSquare
         const glm::uvec2 poslb(0, 0);
         const glm::uvec2 posrt(mSize.x - 1, mSize.y - 1);
 
+        const float perlen = posrt.x - poslb.x + posrt.y - poslb.y;
+
         mData[poslb.y * mSize.x + poslb.x] = lb;
         mData[posrt.y * mSize.x + poslb.x] = lt;
         mData[posrt.y * mSize.x + posrt.x] = rt;
@@ -83,7 +87,7 @@ namespace DiamondSquare
         unsigned int stride = mSizeP2 / 2;
         while(stride >= 1)
         {
-          float k = static_cast<float>(stride) / static_cast<float>(mSizeP2 - 1);
+          //float k = static_cast<float>(stride) / static_cast<float>(mSizeP2 - 1);
 
           for(unsigned int gy = stride; gy < mSizeP2; gy += stride * 2)
           {
@@ -104,6 +108,9 @@ namespace DiamondSquare
               const glm::ivec2 prt(x + stride, y + stride);
               const glm::ivec2 prb(x + stride, y - stride);
 
+              const glm::ivec2 wzlb = glm::clamp(plb, glm::ivec2(poslb), glm::ivec2(posrt));
+              const glm::ivec2 wzrt = glm::clamp(prt, glm::ivec2(poslb), glm::ivec2(posrt));
+              float k = static_cast<float>(wzrt.x - wzlb.x + wzrt.y - wzlb.y) / perlen;
               // Вычисляем высоту центровой точки.
               //mData[mid.y * mSize.x + mid.x] = Modf(mPointGenerator(mid, k, plb, plt, prt, prb));
               mData[mid.y * mSize.x + mid.x] = glm::clamp((mPointGenerator(mid, k, plb, plt, prt, prb)), -1.0f, 1.0f);
@@ -130,6 +137,9 @@ namespace DiamondSquare
               const glm::ivec2 pr(x + stride, y);
               const glm::ivec2 pb(x, y - stride);
 
+              const glm::ivec2 wzlb = glm::clamp(glm::ivec2(pl.x, pb.y), glm::ivec2(poslb), glm::ivec2(posrt));
+              const glm::ivec2 wzrt = glm::clamp(glm::ivec2(pr.x, pt.y), glm::ivec2(poslb), glm::ivec2(posrt));
+              float k = static_cast<float>(wzrt.x - wzlb.x + wzrt.y - wzlb.y) / perlen;
               // Вычисляем высоты точек на сторонах.
               //mData[mid.y * mSize.x + mid.x] = Modf(mPointGenerator(mid, k, pl, pt, pr, pb));
               mData[mid.y * mSize.x + mid.x] = glm::clamp(mPointGenerator(mid, k, pl, pt, pr, pb), -1.0f, 1.0f);
