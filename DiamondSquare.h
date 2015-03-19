@@ -36,7 +36,6 @@ namespace DiamondSquare
       float pm = (pl + pt + pr + pb) / 4.0f;
       pm += mRoughness * k * Rand();
 
-      //pm = glm::abs(pm);
       //pm = glm::clamp(pm, 0.0f, 0.5f);
       return pm;
     }

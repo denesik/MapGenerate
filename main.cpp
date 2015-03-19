@@ -62,27 +62,64 @@ void Print(const std::vector<float> &data, const glm::uvec2 &size)
   }
 }
 
+struct WeightedAverage
+{
+  WeightedAverage(const std::vector<unsigned char> &weight, const glm::uvec2 &size)
+    : mWeight(weight), mSize(size)
+  {
+  }
+
+  glm::vec2 operator()(const glm::vec2 &, const std::vector<unsigned int> &poligon, const std::vector<glm::vec2> &vertex)
+  {
+    glm::vec2 point;
+    unsigned int weight = 0;
+    for(auto jt = poligon.begin(); jt != poligon.end(); ++jt)
+    {
+      glm::uvec2 wp(vertex[*jt]);
+      unsigned char w = mWeight[wp.y * mSize.x + wp.x];
+      weight += w;
+
+      point += vertex[*jt] * static_cast<float>(w);
+    }
+    point = point / static_cast<float>(weight);
+    return point;
+  }
+
+  const std::vector<unsigned char> &mWeight;
+  const glm::uvec2 &mSize;
+};
+
 int main()
 {
-  srand(static_cast<unsigned int>(time(NULL)));
+  srand(4);
 
-  glm::uvec2 size(1000, 500);
+  glm::uvec2 size(300, 300);
   std::vector<float> mData;
   mData.resize((size.x) * (size.y), 0.0f);
-  
+  /*
+  for(unsigned int y = 150; y < 250; ++y)
+  {
+    for(unsigned int x = 150; x < 250; ++x)
+    {
+      mData[y * size.x + x] = 0.1f;
+    }
+  }
+  */
+
+  /*
   GifWriter gw;
   GifBegin(&gw, "height.gif", size.x, 256, 50);
 
   //for(float i = 0; i < 10; i += 0.1f)
-  for(unsigned int y = 0; y < size.y; ++y)
+  //for(unsigned int y = 0; y < size.y; ++y)
   {
-    DiamondSquare::DiamondSquare(mData, size, 5, 0.0f, 0.0f, 0.0f, 0.0f);
+    DiamondSquare::DiamondSquare(mData, size, 2, 0.0f, 0.0f, 0.0f, 0.0f);
     {
       Image image;
       image.Resize(size.x, 256);
       image.Fill(0xFFFFFFFF);
 
-      //unsigned int y = 0;
+      unsigned int y = 0;
       for(unsigned int x = 0; x < size.x; ++x)
       {
         unsigned int height = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 127.5f);
@@ -94,8 +131,18 @@ int main()
     }
   }
   GifEnd(&gw);
+*/
+
+  DiamondSquare::DiamondSquare(mData, size, 7, 0.0f, 0.0f, 0.0f, 0.0f);
 
 
+  std::vector<unsigned char> weight;
+  weight.resize(mData.size(), 0);
+
+  for(unsigned int i = 0; i < mData.size(); ++i)
+  {
+    weight[i] = static_cast<unsigned char>((mData[i] + 1.0f) * 127.5f);
+  }
 
   {
     Image img1;
@@ -106,16 +153,15 @@ int main()
     {
       for(unsigned int x = 0; x < size.x; ++x)
       {
-        //mData[y * size.x + x] = mData[y * size.x + x] > 0 ?
-        //  mData[y * size.x + x] * mData[y * size.x + x] : - (mData[y * size.x + x] * mData[y * size.x + x]);
-        unsigned int color = static_cast<unsigned char>((mData[y * size.x + x] + 1.0f) * 127.5f);
+        unsigned int color = weight[y * size.x + x];
 
         unsigned int c = 0x000000FF;
         c |= color << 8;
         c |= color << 16;
         c |= color << 24;
-        if(color <= 140) c |= 0x0000FFFF;
-        if(color > 140 && color <= 200) c |= 0x00FF00FF;
+        if(color <= 135) c |= 0x0000FFFF;
+        if(color > 135 && color <= 140) c |= 0xFFFF00FF;
+        if(color > 140 && color <= 220) c |= 0x00FF00FF;
         img1.DrawPoint(glm::uvec2(x, y), c);
       }
     }
@@ -123,30 +169,53 @@ int main()
   }
 
 
-  /*
-  glm::uvec2 size(500, 500);
-
-  std::vector<unsigned char> mData;
-  mData.resize((size.x + 1) * (size.y + 1), 0xFF);
 
   std::vector<glm::vec2> points;
-  points = Generate(20, size);
-  Voronoi diagram(points, size);
+  points = Generate((size.x + size.y) * 5, glm::uvec2(size.x - 1, size.y - 1));
+
+  GifWriter gw;
+  GifBegin(&gw, "voronoi.gif", size.x, size.y, 50);
+  for(unsigned int i = 0; i < 5000; ++i)
+  {
+    points = Lloyd(points, glm::uvec2(size.x - 1, size.y - 1), WeightedAverage(weight, size));
+
+    // Рисуем анимацию.
+    Voronoi diagram(points, glm::uvec2(size.x - 1, size.y - 1));
+    diagram();
+    const std::vector<glm::vec2> &vertex = diagram.GetVertex();
+    const std::vector<Voronoi::Edge> &edge = diagram.GetEdges();
+
+    Image image;
+    image.Resize(size.x, size.y);
+    image.Fill(0xFFFFFFFF);
+
+
+    for(auto it = edge.begin(); it != edge.end(); ++it)
+    {
+      const glm::vec2 &p1 = vertex[(*it).vertex1];
+      const glm::vec2 &p2 = vertex[(*it).vertex2];
+      image.DrawLine(p1, p2, 0x00FF00FF);
+    }
+    /*
+    for(auto it = edge.begin(); it != edge.end(); ++it)
+    {
+      const glm::vec2 &p1 = points[(*it).site1];
+      const glm::vec2 &p2 = points[(*it).site2];
+      image.DrawLine(p1, p2, 0xFF0000FF);
+    }
+    */
+    GifWriteFrame(&gw, &image.Raw()[0], size.x, size.y, 2);
+  }
+  GifEnd(&gw);
+
+  Voronoi diagram(points, glm::uvec2(size.x - 1, size.y - 1));
   diagram();
 
   auto const &vertex = diagram.GetVertex();
-  std::vector<unsigned char> vertexHeight;
-  vertexHeight.resize(vertex.size());
-  std::generate(vertexHeight.begin(), vertexHeight.end(), []
-  {
-    return rand() % 255;
-  });
-
-  MapGenerate::Rasterization(mData, size, diagram, vertexHeight);
 
   Image image;
-  image.Resize(size.x + 1, size.y + 1);
-  image.FillGray(mData);
+  image.Resize(size.x, size.y);
+  image.Fill(0xFFFFFFFF);
 
   const std::vector<Voronoi::Edge> &edge = diagram.GetEdges();
   for(auto it = edge.begin(); it != edge.end(); ++it)
@@ -168,8 +237,6 @@ int main()
   image.Save("img.png");
 
 
-//  lodepng::encode("img1.png", mData, size.x, size.y, LCT_GREY);
-*/
   return 0;
 }
 
